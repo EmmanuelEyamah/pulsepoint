@@ -1,35 +1,87 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+/* eslint-disable react-refresh/only-export-components */
+import {
+  ErrorComponent,
+  RouterProvider,
+  createRouter,
+} from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
+import { NotFoundPage } from "./components/not-found";
+import { LoadingScreen } from "./components/LoadingScreen";
 
-function App() {
-  const [count, setCount] = useState(0)
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 30, // 30 minutes - settings don't change often
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+const NotFoundScreen = () => {
+  return <NotFoundPage />;
+};
+
+const router = createRouter({
+  routeTree,
+  defaultPendingComponent: LoadingScreen,
+  defaultPendingMinMs: 1000, // Reduced from 3000
+  defaultErrorComponent: ({ error }) => <ErrorComponent error={error} />,
+  context: {
+    auth: undefined!,
+    queryClient,
+  },
+  defaultNotFoundComponent: NotFoundScreen,
+  defaultPreload: "intent",
+  defaultPreloadStaleTime: 0,
+});
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
 }
 
-export default App
+function App() {
+  return (
+    <>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: "#fff",
+              color: "#333",
+              border: "1px solid #e2e8f0",
+              padding: "16px",
+              borderRadius: "12px",
+              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+            },
+            success: {
+              icon: "🎉",
+              style: {
+                background: "#F0FDF4",
+                color: "#4CAF50",
+                border: "none",
+              },
+            },
+            error: {
+              icon: "❌",
+              style: {
+                background: "#fff",
+                color: "#ef4444",
+                border: "1px solid #fecaca",
+              },
+            },
+          }}
+        />
+      </QueryClientProvider>
+    </>
+  );
+}
+
+export default App;
